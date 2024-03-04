@@ -58,17 +58,12 @@ enum Message {
     ClearLogs,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 enum Tabs {
+    #[default]
     Explorer,
     Logs,
     Editor,
-}
-
-impl Default for Tabs {
-    fn default() -> Self {
-        Tabs::Explorer
-    }
 }
 
 impl Application for App {
@@ -237,7 +232,7 @@ impl DB {
             entries_column = entries_column.push(container(entry_container).width(Length::Fill));
         }
 
-        if self.questions.len() > 0 {
+        if !self.questions.is_empty() {
             questions_column = questions_column.push(text("Вопросы: ").size(16));
         }
         for (question, answer) in &self.questions {
@@ -245,7 +240,7 @@ impl DB {
                 questions_column.push(text(format!("{}: {}", question, answer)).size(16));
         }
 
-        if self.tips.len() > 0 {
+        if !self.tips.is_empty() {
             tips_column = tips_column.push(text("Подсказки: ").size(16));
         }
         for (tip, detail) in &self.tips {
@@ -298,7 +293,7 @@ struct Logs {
 
 impl Logs {
     fn view(&self) -> Element<Message> {
-        if self.stash.len() == 0 {
+        if self.stash.is_empty() {
             return container(text("Сообщений нет")).padding(10).into();
         }
 
@@ -350,7 +345,7 @@ impl Logs {
                 Error::IO(kind) => LogEntry {
                     severity: LogSeverity::Error,
                     timestamp: stamp,
-                    message: format!("IO: {}", kind.to_string()),
+                    message: format!("IO: {}", kind),
                 },
                 Error::Parse(msg, _) => LogEntry {
                     severity: LogSeverity::Error,
@@ -479,7 +474,7 @@ impl DB {
 
     fn add_category(&mut self, category: &str, value: &str) {
         if let Some(values) = self.categories.get_mut(category) {
-            if values.iter().find(|x| **x == value).is_none() {
+            if !values.iter().any(|x| *x == value) {
                 values.push(value.to_string());
             }
         } else {
