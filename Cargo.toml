@@ -3,6 +3,10 @@ name = "expert_kb"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+chrono = "0.4.34"
+iced = { version = "0.12.1", features = ["tokio"] }
+pest = "2.7.7"
+pest_derive = "2.7.7"
+rfd = { version = "0.14.0", features = ["xdg-portal"] }
+tokio = { version = "1.36.0", features = ["fs", "rt"] }

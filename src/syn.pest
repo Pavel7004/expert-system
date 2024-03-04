@@ -1,0 +1,20 @@
+WHITESPACE = _{ " " | "\n" | "\t" | "\r" }
+
+category = @{ (LETTER | NUMBER | "_")+ }
+value    = @{ (LETTER | NUMBER | "_")+ }
+
+pair  = { category ~ "-" ~ value }
+pairs = { pair ~ ("и" ~ pair)* }
+
+number = @{ NUMBER+ }
+
+text     = @{ (LETTER | "-" | "_" | " " | "?" | "(" | ")" | "/")+ }
+
+entry  = { number ~ "если" ~ pairs ~ "то" ~ pair }
+advice = { "вопрос" ~ category ~ text }
+
+change = { "перевод" ~ category ~ text }
+
+tip = { "подсказка" ~ category ~ text }
+
+file = { SOI ~ entry+ ~ (advice | change | tip)* ~ EOI }
