@@ -58,7 +58,7 @@ enum Message {
     ClearLogs,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 enum Tabs {
     #[default]
     Explorer,
@@ -78,7 +78,7 @@ impl Application for App {
             Self {
                 db: Arc::clone(&db),
                 file: None,
-                active_tab_id: Tabs::default(),
+                active_tab: Tabs::default(),
                 explorer: FileExplorer {
                     db: Arc::clone(&db),
                 },
@@ -109,7 +109,7 @@ impl Application for App {
                 }
                 Err(error) => {
                     self.logs.error(error);
-                    self.active_tab_id = Tabs::Logs;
+                    self.active_tab = Tabs::Logs;
 
                     Command::none()
                 }
@@ -119,10 +119,10 @@ impl Application for App {
                     Ok(db) => {
                         self.db = db.clone();
                         self.explorer.db = db;
-                        self.active_tab_id = Tabs::Explorer;
+                        self.active_tab = Tabs::Explorer;
                     }
                     Err(error) => {
-                        self.active_tab_id = Tabs::Logs;
+                        self.active_tab = Tabs::Logs;
 
                         self.logs.error(error);
                     }
@@ -130,7 +130,7 @@ impl Application for App {
                 Command::none()
             }
             Message::TabChanged(new_tab) => {
-                self.active_tab_id = new_tab;
+                self.active_tab = new_tab;
 
                 Command::none()
             }
@@ -151,15 +151,23 @@ impl Application for App {
         let switches = container(
             column![
                 button("Данные")
-                    .on_press(Message::TabChanged(Tabs::Explorer))
+                    .on_press_maybe(
+                        (self.active_tab != Tabs::Explorer)
+                            .then_some(Message::TabChanged(Tabs::Explorer))
+                    )
                     .width(Length::Fill)
                     .style(theme::Button::Secondary),
                 button("Редактор")
-                    .on_press(Message::TabChanged(Tabs::Editor))
+                    .on_press_maybe(
+                        (self.active_tab != Tabs::Editor)
+                            .then_some(Message::TabChanged(Tabs::Editor))
+                    )
                     .width(Length::Fill)
                     .style(theme::Button::Secondary),
                 button("Логи")
-                    .on_press(Message::TabChanged(Tabs::Logs))
+                    .on_press_maybe(
+                        (self.active_tab != Tabs::Logs).then_some(Message::TabChanged(Tabs::Logs))
+                    )
                     .width(Length::Fill)
                     .style(theme::Button::Secondary),
             ]
