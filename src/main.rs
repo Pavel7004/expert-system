@@ -39,7 +39,7 @@ struct App {
     db: Arc<DB>,
     file: Option<PathBuf>,
 
-    active_tab_id: Tabs,
+    active_tab: Tabs,
 
     explorer: FileExplorer,
     logs: Logs,
@@ -194,7 +194,7 @@ impl Application for App {
                 .spacing(20),
         );
 
-        let right_pane = match self.active_tab_id {
+        let right_pane = match self.active_tab {
             Tabs::Explorer => self.explorer.view(),
             Tabs::Logs => self.logs.view(),
             Tabs::Editor => self.editor.view(),
@@ -401,7 +401,7 @@ enum Error {
 
 async fn open_file() -> Result<(PathBuf, Arc<String>), Error> {
     let picked_file = rfd::AsyncFileDialog::new()
-        .set_title("Open a knowledge base...")
+        .set_title("Открыть базу знаний...")
         .pick_file()
         .await
         .ok_or(Error::DialogClosed)?;
@@ -477,10 +477,11 @@ impl DB {
             if !values.iter().any(|x| *x == value) {
                 values.push(value.to_string());
             }
-        } else {
-            self.categories
-                .insert(category.to_string(), vec![value.to_string()]);
+            return;
         }
+
+        self.categories
+            .insert(category.to_string(), vec![value.to_string()]);
     }
 }
 
