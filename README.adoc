@@ -1,0 +1,68 @@
+= expert-system
+:toc: macro
+:toc-title:
+:toclevels: 4
+:icons: font
+
+toc::[]
+
+== Description
+
+This Rust project is an expert system example that showcases the use of the `Iced` GUI library for creating a user-friendly interface
+and the `PEST` parsing library for interpreting a custom language. Users can input queries in a defined language, which the system then
+parses to search and interact with the underlying knowledge base.
+
+== Features
+
+* Custom language parsing using https://github.com/pest-parser/pest[pest]
+* Interactive GUI built with https://github.com/iced-rs/iced[iced]
+* Search functionality within the knowledge base
+* Real-time interaction with the expert system
+
+== Getting Started
+
+To run this project on your local machine, follow the steps below:
+
+. Ensure you have the latest stable version of Rust installed. You can get it from https://www.rust-lang.org/learn/get-started.
+. Clone the repository to your local machine using `git`:
++
+[source,sh]
+----
+git clone https://github.com/Pavel7004/expert-system
+----
+. Navigate to the project directory:
++
+[source,sh]
+----
+cd expert-system
+----
+. Build and run the project with `cargo`:
++
+[source,sh]
+----
+cargo run
+----
+
+== Usage
+
+Once the application is running, you can interact with the expert system through the GUI.
+
+== Contributing
+
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+Please ensure that your code complies with the project's coding standards and that tests pass before proposing changes.
+
+. Fork the Project
+. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+. Push to the Branch (`git push origin feature/AmazingFeature`)
+. Open a Pull Request
+
+== License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+== Contact
+
+Project Link: https://github.com/Pavel7004/expert-system
