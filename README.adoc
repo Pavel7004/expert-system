@@ -4,6 +4,8 @@
 :toclevels: 4
 :icons: font
 
+image:https://github.com/Pavel7004/expert-system/actions/workflows/rust.yml/badge.svg["Rust"]
+
 toc::[]
 
 == Description
