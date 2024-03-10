@@ -352,10 +352,11 @@ struct LogEntry {
     message: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 enum LogSeverity {
     Info,
-    //Warning,
+    Warning,
     Error,
 }
 
@@ -379,6 +380,7 @@ impl Logs {
                             "[{}]",
                             match log_entry.severity {
                                 LogSeverity::Info => "INFO",
+                                LogSeverity::Warning => "WARN",
                                 LogSeverity::Error => "ERROR",
                             }
                         )),
@@ -406,6 +408,15 @@ impl Logs {
         .into()
     }
 
+    #[allow(dead_code)]
+    fn debug(&mut self, msg: &str) {
+        self.stash.push(LogEntry {
+            severity: LogSeverity::Info,
+            timestamp: Local::now().format("%H:%M").to_string(),
+            message: msg.to_string(),
+        })
+    }
+
     fn error(&mut self, err: Error) {
         let stamp = Local::now().format("%H:%M").to_string();
         self.stash.push({
@@ -424,6 +435,11 @@ impl Logs {
                     severity: LogSeverity::Error,
                     timestamp: stamp,
                     message: format!("Parser: {}", msg),
+                },
+                Error::Query(msg) => LogEntry {
+                    severity: LogSeverity::Info,
+                    timestamp: stamp,
+                    message: format!("Search: {}", msg),
                 },
             }
         });
