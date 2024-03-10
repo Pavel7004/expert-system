@@ -205,39 +205,7 @@ impl Application for App {
     }
 
     fn view(&self) -> Element<Message> {
-        let switches = container(
-            column![
-                button("Вопросы")
-                    .on_press_maybe(
-                        (self.active_tab != Tabs::Questions)
-                            .then_some(Message::TabChanged(Tabs::Questions))
-                    )
-                    .width(Length::Fill)
-                    .style(theme::Button::Secondary),
-                button("Данные")
-                    .on_press_maybe(
-                        (self.active_tab != Tabs::Explorer)
-                            .then_some(Message::TabChanged(Tabs::Explorer))
-                    )
-                    .width(Length::Fill)
-                    .style(theme::Button::Secondary),
-                button("Редактор")
-                    .on_press_maybe(
-                        (self.active_tab != Tabs::Editor)
-                            .then_some(Message::TabChanged(Tabs::Editor))
-                    )
-                    .width(Length::Fill)
-                    .style(theme::Button::Secondary),
-                button("Логи")
-                    .on_press_maybe(
-                        (self.active_tab != Tabs::Logs).then_some(Message::TabChanged(Tabs::Logs))
-                    )
-                    .width(Length::Fill)
-                    .style(theme::Button::Secondary),
-            ]
-            .spacing(5)
-            .width(Length::Fill),
-        );
+        let tabs = self.tabs();
 
         let file_indicator = text(
             self.file
@@ -261,7 +229,7 @@ impl Application for App {
         .style(theme::Container::Box);
 
         let left_pane = container(
-            column![switches, vertical_space(), file_manager]
+            column![tabs, vertical_space(), file_manager]
                 .width(Length::Fixed(240.0))
                 .spacing(20),
         );
@@ -277,6 +245,30 @@ impl Application for App {
             .width(Length::Fill)
             .height(Length::Fill)
             .into()
+    }
+}
+
+impl App {
+    fn tab<'a>(&'a self, name: &'a str, tab: Tabs) -> Element<Message> {
+        button(name)
+            .on_press_maybe((self.active_tab != tab).then_some(Message::TabChanged(tab)))
+            .width(Length::Fill)
+            .style(theme::Button::Secondary)
+            .into()
+    }
+
+    fn tabs(&self) -> Element<Message> {
+        container(
+            column![
+                self.tab("Вопросы", Tabs::Questions),
+                self.tab("Данные", Tabs::Explorer),
+                self.tab("Редактор", Tabs::Editor),
+                self.tab("Сообщения", Tabs::Logs),
+            ]
+            .spacing(5)
+            .width(Length::Fill),
+        )
+        .into()
     }
 }
 
