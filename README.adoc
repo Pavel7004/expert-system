@@ -1,4 +1,4 @@
-= expert-system
+= Expert System
 :toc: macro
 :toc-title:
 :toclevels: 4
