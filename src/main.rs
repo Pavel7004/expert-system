@@ -249,22 +249,21 @@ impl Application for App {
 }
 
 impl App {
-    #[inline(always)]
-    fn tab<'a>(&'a self, name: &'a str, tab: Tabs) -> Element<Message> {
-        button(name)
-            .on_press_maybe((self.active_tab != tab).then_some(Message::TabChanged(tab)))
-            .width(Length::Fill)
-            .style(theme::Button::Secondary)
-            .into()
-    }
-
-    #[inline(always)]
     fn tabs(&self) -> Element<Message> {
+        macro_rules! tab {
+            ($name: expr, $tab: expr) => {
+                button($name)
+                    .on_press_maybe((self.active_tab != $tab).then_some(Message::TabChanged($tab)))
+                    .width(Length::Fill)
+                    .style(theme::Button::Secondary)
+            };
+        }
+
         column![
-            self.tab("Вопросы", Tabs::Questions),
-            self.tab("Данные", Tabs::Explorer),
-            self.tab("Редактор", Tabs::Editor),
-            self.tab("Сообщения", Tabs::Logs),
+            tab!("Вопросы", Tabs::Questions),
+            tab!("Данные", Tabs::Explorer),
+            tab!("Редактор", Tabs::Editor),
+            tab!("Сообщения", Tabs::Logs),
         ]
         .spacing(5)
         .width(Length::Fill)
