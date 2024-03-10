@@ -29,7 +29,7 @@ struct Entry {
 }
 
 use iced::widget::{
-    button, column, container, horizontal_space, row, scrollable, text, text_editor,
+    button, column, combo_box, container, horizontal_space, row, scrollable, text, text_editor,
     vertical_space, Column,
 };
 use iced::{executor, theme, Application, Command, Element, Length, Theme};
@@ -92,6 +92,7 @@ impl Application for App {
                 },
                 logs: Logs::default(),
                 editor: TextEditor::default(),
+                questions: Questions::default(),
             },
             Command::none(),
         )
@@ -102,7 +103,7 @@ impl Application for App {
     }
 
     fn theme(&self) -> Theme {
-        Theme::Nord
+        Theme::CatppuccinLatte
     }
 
     fn update(&mut self, message: Self::Message) -> Command<Message> {
@@ -260,7 +261,7 @@ impl Application for App {
         .style(theme::Container::Box);
 
         let left_pane = container(
-            column![file_manager, vertical_space(), switches]
+            column![switches, vertical_space(), file_manager]
                 .width(Length::Fixed(240.0))
                 .spacing(20),
         );
