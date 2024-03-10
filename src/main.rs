@@ -235,13 +235,13 @@ impl Application for App {
         );
 
         let right_pane = match self.active_tab {
+            Tabs::Questions => self.questions.view(),
             Tabs::Explorer => self.explorer.view(),
             Tabs::Logs => self.logs.view(),
             Tabs::Editor => self.editor.view(),
-            Tabs::Questions => self.questions.view(),
         };
 
-        container(row![left_pane, right_pane].spacing(5))
+        container(row![left_pane, container(right_pane).padding(10)])
             .width(Length::Fill)
             .height(Length::Fill)
             .into()
@@ -249,6 +249,7 @@ impl Application for App {
 }
 
 impl App {
+    #[inline(always)]
     fn tab<'a>(&'a self, name: &'a str, tab: Tabs) -> Element<Message> {
         button(name)
             .on_press_maybe((self.active_tab != tab).then_some(Message::TabChanged(tab)))
@@ -257,17 +258,16 @@ impl App {
             .into()
     }
 
+    #[inline(always)]
     fn tabs(&self) -> Element<Message> {
-        container(
-            column![
-                self.tab("Вопросы", Tabs::Questions),
-                self.tab("Данные", Tabs::Explorer),
-                self.tab("Редактор", Tabs::Editor),
-                self.tab("Сообщения", Tabs::Logs),
-            ]
-            .spacing(5)
-            .width(Length::Fill),
-        )
+        column![
+            self.tab("Вопросы", Tabs::Questions),
+            self.tab("Данные", Tabs::Explorer),
+            self.tab("Редактор", Tabs::Editor),
+            self.tab("Сообщения", Tabs::Logs),
+        ]
+        .spacing(5)
+        .width(Length::Fill)
         .into()
     }
 }
@@ -312,13 +312,9 @@ impl DB {
             tips_column = tips_column.push(text(format!("{}: {}", tip, detail)).size(16));
         }
 
-        scrollable(
-            column![entries_column, questions_column, tips_column]
-                .spacing(24)
-                .padding(10),
-        )
-        .width(Length::Fill)
-        .into()
+        scrollable(column![entries_column, questions_column, tips_column].spacing(24))
+            .width(Length::Fill)
+            .into()
     }
 }
 
@@ -330,7 +326,7 @@ struct FileExplorer {
 impl FileExplorer {
     fn view(&self) -> Element<Message> {
         if self.db.entries.is_empty() {
-            return container(text("Данных нет").size(16)).padding(10).into();
+            return text("Данных нет").into();
         }
 
         self.db.view()
@@ -360,7 +356,7 @@ struct Logs {
 impl Logs {
     fn view(&self) -> Element<Message> {
         if self.stash.is_empty() {
-            return container(text("Сообщений нет")).padding(10).into();
+            return text("Сообщений нет").into();
         }
 
         let scrollable_column = scrollable(self.stash.iter().fold(
@@ -384,19 +380,17 @@ impl Logs {
             },
         ));
 
-        container(
-            column![
-                row![
-                    horizontal_space(),
-                    button("Очистить лог")
-                        .on_press(Message::ClearLogs)
-                        .style(theme::Button::Destructive)
-                ]
-                .spacing(5),
-                scrollable_column
+        column![
+            row![
+                horizontal_space(),
+                button("Очистить лог")
+                    .on_press(Message::ClearLogs)
+                    .style(theme::Button::Destructive)
             ]
-            .padding(5),
-        )
+            .spacing(5),
+            scrollable_column
+        ]
+        .padding(5)
         .into()
     }
 
@@ -501,7 +495,7 @@ impl Default for Questions {
 impl Questions {
     fn view(&self) -> Element<Message> {
         if self.db.entries.is_empty() {
-            return container(text("Нет данных")).padding(10).into();
+            return text("Нет данных").into();
         }
 
         let find_category = combo_box(
@@ -543,7 +537,7 @@ impl Questions {
             form = form.push(text(&self.result));
         }
 
-        container(form).padding(10).into()
+        form.into()
     }
 
     fn refresh_categories(&mut self) {
