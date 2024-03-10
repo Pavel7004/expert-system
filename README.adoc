@@ -11,7 +11,7 @@ toc::[]
 == Description
 
 This Rust project is an expert system example that showcases the use of the `Iced` GUI library for creating a user-friendly interface
-and the `PEST` parsing library for interpreting a custom language. Users can input queries in a defined language, which the system then
+and the `pest` parsing library for interpreting a custom language. Users can input queries in a defined language, which the system then
 parses to search and interact with the underlying knowledge base.
 
 == Features
