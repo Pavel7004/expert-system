@@ -8,7 +8,7 @@ pairs = { pair ~ ("и" ~ pair)* }
 
 number = @{ NUMBER+ }
 
-text     = @{ (LETTER | "-" | "_" | " " | "?" | "(" | ")" | "/")+ }
+text = @{ (LETTER | NUMBER |  "-" | "_" | " " | "?" | "(" | ")" | "/")+ }
 
 entry  = { number ~ "если" ~ pairs ~ "то" ~ pair }
 advice = { "вопрос" ~ category ~ text }
@@ -17,4 +17,4 @@ change = { "перевод" ~ category ~ text }
 
 tip = { "подсказка" ~ category ~ text }
 
-file = { SOI ~ entry+ ~ (advice | change | tip)* ~ EOI }
+file = { SOI ~ (entry | advice | change | tip)+ ~ EOI }
