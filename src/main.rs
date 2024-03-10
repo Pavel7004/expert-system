@@ -44,6 +44,7 @@ struct App {
     explorer: FileExplorer,
     logs: Logs,
     editor: TextEditor,
+    questions: Questions,
 }
 
 #[derive(Debug, Clone)]
@@ -56,11 +57,18 @@ enum Message {
     FileParsed(Result<Arc<DB>, Error>),
 
     ClearLogs,
+
+    FindAnswer,
+    FoundAnswer(Result<Arc<String>, Error>),
+
+    SelectedCategory(Arc<String>),
+    SelectedAnswer(Arc<String>, Arc<String>),
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
 enum Tabs {
     #[default]
+    Questions,
     Explorer,
     Logs,
     Editor,
@@ -118,8 +126,12 @@ impl Application for App {
                 match result {
                     Ok(db) => {
                         self.db = db.clone();
-                        self.explorer.db = db;
-                        self.active_tab = Tabs::Explorer;
+                        self.explorer.db = db.clone();
+                        self.questions.db = db;
+
+                        self.questions.refresh_categories();
+
+                        self.active_tab = Tabs::Questions;
                     }
                     Err(error) => {
                         self.active_tab = Tabs::Logs;
@@ -144,12 +156,63 @@ impl Application for App {
 
                 Command::none()
             }
+            Message::SelectedAnswer(category, answer) => {
+                let (_, answ) = self.questions.answers.get_mut(category.as_ref()).unwrap();
+
+                *answ = Some(answer.to_string());
+
+                Command::none()
+            }
+            Message::FindAnswer => {
+                self.questions.is_searching = true;
+
+                Command::perform(
+                    query_db(
+                        self.db.clone(),
+                        self.questions.selected_category.clone(),
+                        self.questions
+                            .answers
+                            .iter()
+                            .filter(|(_, (_, y))| y.is_some())
+                            .map(|(x, (_, y))| -> (String, String) {
+                                (x.to_string(), y.clone().unwrap())
+                            })
+                            .collect::<Vec<_>>(),
+                    ),
+                    Message::FoundAnswer,
+                )
+            }
+            Message::FoundAnswer(res) => {
+                match res {
+                    Ok(result) => self.questions.result = result,
+                    Err(err) => {
+                        self.questions.result = Arc::new(String::from("Not found."));
+
+                        self.logs.error(err);
+                    }
+                };
+                self.questions.is_searching = false;
+
+                Command::none()
+            }
+            Message::SelectedCategory(category) => {
+                self.questions.selected_category = Some(category.to_string());
+
+                Command::none()
+            }
         }
     }
 
     fn view(&self) -> Element<Message> {
         let switches = container(
             column![
+                button("Вопросы")
+                    .on_press_maybe(
+                        (self.active_tab != Tabs::Questions)
+                            .then_some(Message::TabChanged(Tabs::Questions))
+                    )
+                    .width(Length::Fill)
+                    .style(theme::Button::Secondary),
                 button("Данные")
                     .on_press_maybe(
                         (self.active_tab != Tabs::Explorer)
@@ -206,6 +269,7 @@ impl Application for App {
             Tabs::Explorer => self.explorer.view(),
             Tabs::Logs => self.logs.view(),
             Tabs::Editor => self.editor.view(),
+            Tabs::Questions => self.questions.view(),
         };
 
         container(row![left_pane, right_pane].spacing(5))
@@ -400,11 +464,103 @@ impl TextEditor {
     }
 }
 
+#[derive(Debug)]
+struct Questions {
+    db: Arc<DB>,
+    is_searching: bool,
+
+    answers: HashMap<String, (combo_box::State<String>, Option<String>)>,
+    result: Arc<String>,
+
+    categories: combo_box::State<String>,
+    selected_category: Option<String>,
+}
+
+impl Default for Questions {
+    fn default() -> Self {
+        Self {
+            db: Arc::new(DB::default()),
+            answers: HashMap::default(),
+            result: Arc::new(String::default()),
+            categories: combo_box::State::new(vec![]),
+            selected_category: None,
+            is_searching: false,
+        }
+    }
+}
+
+impl Questions {
+    fn view(&self) -> Element<Message> {
+        if self.db.entries.is_empty() {
+            return container(text("Нет данных")).padding(10).into();
+        }
+
+        let find_category = combo_box(
+            &self.categories,
+            "Выберите категорию для поиска...",
+            self.selected_category.as_ref(),
+            |cat| Message::SelectedCategory(Arc::new(cat)),
+        );
+
+        let find_button =
+            button("Найти").on_press_maybe((!self.is_searching).then_some(Message::FindAnswer));
+
+        let questions = self
+            .db
+            .questions
+            .iter()
+            .filter(|(category, _)| match self.selected_category {
+                Some(ref cat) => category != &cat,
+                None => true,
+            })
+            .fold(Column::new().spacing(10), |column, (category, question)| {
+                let (state, selected) = self.answers.get(category).unwrap();
+                let category = category.clone();
+
+                column.push(
+                    column![
+                        text(question),
+                        combo_box(state, "Ответ...", selected.as_ref(), move |val| {
+                            Message::SelectedAnswer(Arc::new(category.to_string()), Arc::new(val))
+                        })
+                    ]
+                    .spacing(3),
+                )
+            });
+
+        let mut form = column![find_category, questions, find_button].spacing(10);
+
+        if !self.result.is_empty() {
+            form = form.push(text(&self.result));
+        }
+
+        container(form).padding(10).into()
+    }
+
+    fn refresh_categories(&mut self) {
+        self.selected_category = None;
+
+        self.categories = combo_box::State::new(
+            self.db
+                .categories
+                .keys()
+                .map(|x| x.to_string())
+                .collect::<Vec<_>>(),
+        );
+
+        self.db.categories.iter().for_each(|(x, y)| {
+            self.answers
+                .insert(x.to_string(), (combo_box::State::new(y.clone()), None));
+        });
+    }
+}
+
 #[derive(Debug, Clone)]
 enum Error {
     DialogClosed,
     IO(io::ErrorKind),
     Parse(Arc<String>, (usize, usize)),
+    Query(Arc<String>),
 }
 
 async fn open_file() -> Result<(PathBuf, Arc<String>), Error> {
@@ -429,6 +585,22 @@ async fn load_file(path: PathBuf) -> Result<(PathBuf, Arc<String>), Error> {
 
 async fn parse_file(contents: Arc<String>) -> Result<Arc<DB>, Error> {
     parse_db_from_file(&contents).map(Arc::new)
+}
+
+async fn query_db(
+    db: Arc<DB>,
+    target: Option<String>,
+    query: Vec<(String, String)>,
+) -> Result<Arc<String>, Error> {
+    db.find_value(
+        target.as_ref(),
+        query.iter().map(|(x, y)| (x, y)).collect::<Vec<_>>(),
+    )
+    .map(Arc::new)
+    .ok_or(Error::Query(Arc::new(format!(
+        "Query {:?} didn't find anything, target category {:?}",
+        query, target
+    ))))
 }
 
 fn main() -> iced::Result {
@@ -490,6 +662,65 @@ impl DB {
 
         self.categories
             .insert(category.to_string(), vec![value.to_string()]);
+    }
+
+    fn find_value(
+        &self,
+        target_category: Option<&String>,
+        query: Vec<(&String, &String)>,
+    ) -> Option<String> {
+        let mut sub_categories_to_match = Vec::new();
+
+        if let Some(target_cat) = target_category {
+            for entry in &self.entries {
+                if &entry.category == target_cat {
+                    for (cat, val) in &entry.categories {
+                        if query
+                            .iter()
+                            .any(|&(q_cat, q_val)| q_cat == cat && q_val == val)
+                        {
+                            sub_categories_to_match.push((cat.clone(), val.clone()));
+                        }
+                    }
+                }
+            }
+        }
+
+        self.entries
+            .iter()
+            .find(|entry| {
+                sub_categories_to_match.iter().all(|(sub_cat, sub_val)| {
+                    entry
+                        .categories
+                        .iter()
+                        .any(|(cat, val)| cat == sub_cat && val == sub_val)
+                })
+            })
+            .map(|entry| entry.value.clone())
+
+        // let entries_in_target_category = self
+        //     .entries
+        //     .iter()
+        //     .filter(|entry| target_category.is_some_and(|x| entry.category == *x))
+        //     .collect::<Vec<_>>();
+
+        // let mut matching_entries = entries_in_target_category.clone();
+        // for (query_cat, query_val) in query {
+        //     matching_entries = matching_entries
+        //         .into_iter()
+        //         .filter(|entry| {
+        //             entry
+        //                 .categories
+        //                 .iter()
+        //                 .any(|(cat, val)| cat == query_cat && val == query_val)
+        //         })
+        //         .collect::<Vec<_>>();
+        // }
+
+        // matching_entries
+        //     .into_iter()
+        //     .next()
+        //     .map(|entry| entry.value.clone())
     }
 }
 
