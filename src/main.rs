@@ -12,7 +12,7 @@ mod questions;
 fn main() -> iced::Result {
     MainWindow::run(iced::Settings {
         window: iced::window::Settings {
-            resizable: false,
+            resizable: true,
             decorations: true,
             ..iced::window::Settings::default()
         },
